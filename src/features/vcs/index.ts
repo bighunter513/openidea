@@ -20,6 +20,7 @@ import { registerVcsActions } from "./actions";
 import { installChangelists } from "./changelists";
 import { registerHistoryActions, trackOperationContext } from "./historyActions";
 import { registerLogPaneActions } from "./logPaneActions";
+import { registerPerforce } from "./perforce";
 import { controlLabel, controlOperation, inProgress, installOperationNoticeExpiry } from "./operations";
 import { annotationsShown, blameSlot } from "./blame";
 import { activateRevisionAnnotations } from "./annotateRevisionProvider";
@@ -216,6 +217,7 @@ export function activate(): () => void {
     registerOpenOnRemote(),
     registerHistoryActions(),
     registerLogPaneActions(),
+    registerPerforce(),
     activateSettingsPages(),
     registerLocalHistoryActions(),
     installChangelists(),

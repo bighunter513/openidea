@@ -68,6 +68,8 @@ import { addToIgnore } from "./ignore";
 import { hasFileHistory, showCurrentRevision, trackFileHistory } from "./fileRevisions";
 
 const VCS = "vcsAvailable";
+/** Git only: hidden while the selected repository is a Perforce workspace. */
+const GIT = "vcsAvailable && !vcsPerforce";
 const IN_COMMIT_WINDOW = "vcsAvailable && activeToolWindow == commit";
 
 function argPath(arg: unknown): string | undefined {
@@ -247,7 +249,7 @@ export function registerVcsActions(): () => void {
       title: "Commit and Push…",
       category: "Git",
       icon: "git-push",
-      when: VCS,
+      when: GIT,
       run: async () => {
         const { message, amend } = useCommit.getState();
         // Nothing to commit with yet (or the modal interface): IDEA shows where the message is typed.
@@ -260,7 +262,7 @@ export function registerVcsActions(): () => void {
       id: "vcs.toggleAmend",
       title: "Amend Commit",
       category: "Git",
-      when: VCS,
+      when: GIT,
       keyWhen: IN_COMMIT_WINDOW,
       toggled: () => useCommit.getState().amend,
       run: () => void setAmend(!useCommit.getState().amend),
@@ -296,7 +298,7 @@ export function registerVcsActions(): () => void {
       title: "Push…",
       category: "Git",
       icon: "git-push",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => void showPushDialog(arg && typeof arg === "object" ? (arg as PushTarget) : {}),
     },
     {
@@ -304,7 +306,7 @@ export function registerVcsActions(): () => void {
       title: "Update Project…",
       category: "Git",
       icon: "git-pull",
-      when: VCS,
+      when: GIT,
       keywords: ["pull"],
       run: ({ arg }) => showUpdateDialog(arg && typeof arg === "object" ? (arg as UpdateTarget) : {}),
     },
@@ -313,14 +315,14 @@ export function registerVcsActions(): () => void {
       title: "Pull…",
       category: "Git",
       icon: "git-pull",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => showPullDialog(operationRepo(arg)),
     },
     {
       id: "vcs.merge",
       title: "Merge…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       keywords: ["merge branch"],
       run: ({ arg }) => showMergeDialog(operationRepo(arg)),
     },
@@ -328,7 +330,7 @@ export function registerVcsActions(): () => void {
       id: "vcs.rebase",
       title: "Rebase…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       keywords: ["rebase branch"],
       run: ({ arg }) => showRebaseDialog(operationRepo(arg)),
     },
@@ -336,7 +338,7 @@ export function registerVcsActions(): () => void {
       id: "vcs.manageRemotes",
       title: "Manage Remotes…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       keywords: ["remote", "origin", "url"],
       run: showManageRemotes,
     },
@@ -344,7 +346,7 @@ export function registerVcsActions(): () => void {
       id: "vcs.newWorktree",
       title: "New Worktree…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       keywords: ["worktree"],
       run: () => showNewWorktree(),
     },
@@ -352,7 +354,7 @@ export function registerVcsActions(): () => void {
       id: "vcs.worktrees",
       title: "Worktrees…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       keywords: ["worktree"],
       run: showWorktrees,
     },
@@ -361,7 +363,7 @@ export function registerVcsActions(): () => void {
       title: "Fetch",
       category: "Git",
       icon: "git-fetch",
-      when: VCS,
+      when: GIT,
       run: () => void runRemote({ op: "fetch" }, undefined, allRepos()),
     },
     {
@@ -494,7 +496,7 @@ export function registerVcsActions(): () => void {
       title: "Compare with Branch or Revision…",
       category: "Git",
       icon: "diff",
-      when: VCS,
+      when: GIT,
       run: async ({ arg }) => {
         const paths = selectedPaths(arg);
         if (!paths.length) {
@@ -605,7 +607,7 @@ export function registerVcsActions(): () => void {
       title: "Branches…",
       category: "Git",
       icon: "branch",
-      when: VCS,
+      when: GIT,
       keywords: ["checkout", "git branches"],
       run: showBranchesPopup,
     },
@@ -614,7 +616,7 @@ export function registerVcsActions(): () => void {
       title: "New Branch…",
       category: "Git",
       icon: "plus",
-      when: VCS,
+      when: GIT,
       // `{ repos }` (Branches popup with several repositories): in each of them.
       run: ({ arg }) => {
         const repos = (arg as { repos?: unknown } | undefined)?.repos;
@@ -625,7 +627,7 @@ export function registerVcsActions(): () => void {
       id: "vcs.checkoutRevision",
       title: "Checkout Tag or Revision…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       run: () => void checkoutRevision(),
     },
     {
@@ -661,7 +663,7 @@ export function registerVcsActions(): () => void {
       title: "Show Current Revision",
       category: "Git",
       icon: "commit",
-      when: VCS,
+      when: GIT,
       enabled: ({ arg }) => hasFileHistory(argPath(arg) ?? maybeEditorService()?.activePath()),
       run: ({ arg }) => showCurrentRevision(argPath(arg) ?? maybeEditorService()?.activePath()),
     },
@@ -695,7 +697,7 @@ export function registerVcsActions(): () => void {
       title: "Show Incoming and Outgoing Commits",
       category: "Git",
       icon: "history",
-      when: VCS,
+      when: GIT,
       keywords: ["incoming", "outgoing", "ahead", "behind", "unpushed", "unpulled"],
       run: ({ arg }) => showSyncCommitsForCurrent(arg === "incoming" || arg === "outgoing" ? arg : undefined),
     },
@@ -703,7 +705,7 @@ export function registerVcsActions(): () => void {
       id: destination === "gitignore" ? "vcs.ignoreShared" : "vcs.ignoreLocal",
       title: destination === "gitignore" ? "Add to .gitignore" : "Add to .git/info/exclude",
       category: "Git",
-      when: VCS,
+      when: GIT,
       keywords: ["ignore", "unversioned", "exclude"],
       run: ({ arg }) => addToIgnore(contextPaths(arg), destination),
     })),
@@ -723,7 +725,7 @@ export function registerVcsActions(): () => void {
       title: "Stash Changes…",
       category: "Git",
       icon: "stash",
-      when: VCS,
+      when: GIT,
       run: () => void stashChanges(),
     },
     {
@@ -731,7 +733,7 @@ export function registerVcsActions(): () => void {
       title: "Stash Selected Files…",
       category: "Git",
       icon: "stash",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => {
         const paths = changedPaths(arg);
         if (!paths.length) {
@@ -749,14 +751,14 @@ export function registerVcsActions(): () => void {
       id: "vcs.unstash",
       title: "Unstash Changes…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       run: () => showUnstashDialog(),
     },
     {
       id: "vcs.resolveConflicts",
       title: "Resolve Conflicts…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       keywords: ["merge"],
       run: showConflictsDialog,
     },

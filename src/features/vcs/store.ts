@@ -10,7 +10,7 @@
  */
 import { onWorkflowSettingsChange, workflowSettings } from "@/platform/workflowSettings";
 import { create } from "zustand";
-import type { Branch, BranchInfo, FileStatus, Stash } from "@/bindings";
+import type { Branch, BranchInfo, FileStatus, Stash, VcsKind } from "@/bindings";
 import { call, commands, isTauri, onIdeEvent } from "@/platform/ipc";
 import { setContext } from "@/platform/context";
 import { useProject } from "@/platform/project";
@@ -32,6 +32,8 @@ export interface VcsState {
   operations: Record<string, string>;
   /** Root → its current branch (`head` null when detached) and HEAD commit. */
   heads: Record<string, RepoHead>;
+  /** Root → the version control system holding it. */
+  kinds: Record<string, VcsKind>;
   /** The selected repository's root (branch widget, log, push…). */
   repo: string | null;
   status: FileStatus[];
@@ -58,6 +60,7 @@ const initial: VcsState = {
   roots: [],
   operations: {},
   heads: {},
+  kinds: {},
   repo: null,
   status: [],
   statusLoaded: false,
@@ -78,6 +81,26 @@ export const useVcs = create<VcsState>(() => ({ ...initial }));
 /** Root of the selected repository; `null` = the project's primary one. */
 export function currentRepo(): string | null {
   return useVcs.getState().repo;
+}
+
+/** The version control system of the repository containing `path` (the selected one without a path). */
+export function vcsKindOf(path?: string | null): VcsKind {
+  const s = useVcs.getState();
+  const root = path ? rootOf(path, s.roots) : (s.repo ?? s.roots[0]);
+  return (root && s.kinds[root]) || "git";
+}
+
+/** Hook: the selected repository is a Perforce workspace. */
+export function usePerforce(): boolean {
+  return useVcs((s) => {
+    const root = s.repo ?? s.roots[0];
+    return !!root && s.kinds[root] === "perforce";
+  });
+}
+
+/** Hook: every repository of the project is a Perforce workspace, so nothing can be stashed. */
+export function useNoStash(): boolean {
+  return useVcs((s) => s.roots.length > 0 && s.roots.every((r) => s.kinds[r] === "perforce"));
 }
 
 /** Root of the selected repository, which its log's and diffs' repository-relative paths are relative to. */
@@ -249,7 +272,9 @@ export function refreshNow(): Promise<void> {
       const shown = s.repo && roots.includes(s.repo) ? s.repo : (roots[0] ?? null);
       const repo = attentionRepo(shown, s.operations, operations) ?? shown;
       const heads = Object.fromEntries(vcsRoots.map((r) => [r.root, { head: r.head, headCommit: r.headCommit }]));
-      useVcs.setState({ operations, heads });
+      const kinds = Object.fromEntries(vcsRoots.map((r) => [r.root, r.kind]));
+      useVcs.setState({ operations, heads, kinds });
+      setContext("vcsPerforce", !!repo && kinds[repo] === "perforce");
       const sameRoots = roots.join("\n") === s.roots.join("\n");
       if (repo !== s.repo || !sameRoots) useVcs.setState({ roots: sameRoots ? s.roots : roots, repo });
       applyStatus(status, branch);
@@ -412,6 +437,7 @@ export function installVcsStore(): () => void {
     clearTimeout(timer);
     useVcs.setState({ ...initial, available, root, version: useVcs.getState().version + 1 });
     setContext("vcsAvailable", available);
+    setContext("vcsPerforce", false);
     setFileDecorations("vcs", new Map());
     if (available && isTauri()) void refreshNow();
     else if (project) void discoverRoots();

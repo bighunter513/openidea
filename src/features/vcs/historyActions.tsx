@@ -64,6 +64,8 @@ import {
 import { currentRepo, focusRepo, useVcs } from "./store";
 
 const VCS = "vcsAvailable";
+/** Git only: hidden while the selected repository is a Perforce workspace. */
+const GIT = "vcsAvailable && !vcsPerforce";
 const IN_GIT_LOG = "(vcsAvailable || projectOpen) && (activeToolWindow == git || vcsLogFocus)";
 const IN_COMMIT = "vcsAvailable && activeToolWindow == commit";
 
@@ -321,12 +323,12 @@ export function registerHistoryActions(): () => void {
     },
 
     // --- Git menu ---
-    { id: "vcs.newTag", title: "New Tag…", category: "Git", when: VCS, run: showTagDialog },
+    { id: "vcs.newTag", title: "New Tag…", category: "Git", when: GIT, run: showTagDialog },
     {
       id: "vcs.resetHead",
       title: "Reset HEAD…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       keywords: ["git reset"],
       run: () => showResetDialog(),
     },
@@ -374,21 +376,21 @@ export function registerHistoryActions(): () => void {
       id: "vcs.log.createPatch",
       title: "Create Patch…",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       run: withCommits((cs) => showCreatePatchForCommits(cs)),
     },
     {
       id: "vcs.log.cherryPick",
       title: "Cherry-Pick",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       run: withCommits(cherryPick),
     },
     {
       id: "vcs.log.checkoutRevision",
       title: "Checkout Revision",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       run: withCommit(checkoutCommit),
     },
     {
@@ -429,7 +431,7 @@ export function registerHistoryActions(): () => void {
       id: "vcs.log.resetToHere",
       title: "Reset Current Branch to Here…",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       run: withCommit((c) => showResetDialog(c)),
     },
     {
@@ -437,7 +439,7 @@ export function registerHistoryActions(): () => void {
       title: "Revert Commit",
       category: "Git Log",
       icon: "revert",
-      when: VCS,
+      when: GIT,
       run: withCommits(revertCommits),
     },
     {
@@ -445,14 +447,14 @@ export function registerHistoryActions(): () => void {
       title: "Undo Commit…",
       category: "Git Log",
       icon: "undo",
-      when: VCS,
+      when: GIT,
       run: withCommit(undoCommit),
     },
     {
       id: "vcs.log.editMessage",
       title: "Edit Commit Message…",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       keywords: ["reword"],
       run: withCommit(editCommitMessage),
     },
@@ -460,14 +462,14 @@ export function registerHistoryActions(): () => void {
       id: "vcs.log.dropCommit",
       title: "Drop Commit",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       run: withCommits(dropCommits),
     },
     {
       id: "vcs.log.squashCommits",
       title: "Squash Commits…",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       run: withCommits(squashCommits),
     },
     {
@@ -475,7 +477,7 @@ export function registerHistoryActions(): () => void {
       title: "Fixup…",
       description: "Prepares a fixup! commit of the local changes for the selected commit.",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       run: withCommit((c) => prepareFixup(c, "fixup")),
     },
     {
@@ -483,7 +485,7 @@ export function registerHistoryActions(): () => void {
       title: "Squash Into…",
       description: "Prepares a squash! commit of the local changes for the selected commit.",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       run: withCommit((c) => prepareFixup(c, "squash")),
     },
     {
@@ -491,7 +493,7 @@ export function registerHistoryActions(): () => void {
       title: "Push All up to Here…",
       category: "Git Log",
       icon: "git-push",
-      when: VCS,
+      when: GIT,
       run: withCommit((c) => {
         const head = useVcs.getState().branch?.head;
         if (head) void executeAction("vcs.push", { branch: head, revision: c });
@@ -501,7 +503,7 @@ export function registerHistoryActions(): () => void {
       id: "vcs.log.rebaseOntoCommit",
       title: "Rebase Current Branch onto Selected Commit",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       run: withCommit((c) => rebaseOnto(c.id)),
     },
     {
@@ -525,14 +527,14 @@ export function registerHistoryActions(): () => void {
       title: "View in Browser",
       category: "Git Log",
       icon: "external-link",
-      when: VCS,
+      when: GIT,
       run: withCommit(openCommitInBrowser),
     },
     {
       id: "vcs.log.interactiveRebase",
       title: "Interactively Rebase from Here…",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       keywords: ["squash", "fixup", "reword", "reorder"],
       run: withCommit(interactivelyRebaseFrom),
     },
@@ -541,14 +543,14 @@ export function registerHistoryActions(): () => void {
       title: "New Branch…",
       category: "Git Log",
       icon: "branch",
-      when: VCS,
+      when: GIT,
       run: withCommit((c) => newBranch(c.id, commitRepo(c) ?? currentRepo())),
     },
     {
       id: "vcs.log.newTag",
       title: "New Tag…",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       run: withCommit(newTagOn),
     },
 
@@ -618,16 +620,16 @@ export function registerHistoryActions(): () => void {
       title: "Shelve Changes…",
       category: "Git",
       icon: "shelve",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => shelveChanges(changePaths(arg)),
     },
-    { id: "vcs.showShelf", title: "Show Shelf", category: "Git", icon: "shelve", when: VCS, run: showShelf },
+    { id: "vcs.showShelf", title: "Show Shelf", category: "Git", icon: "shelve", when: GIT, run: showShelf },
     {
       id: "vcs.unshelve",
       title: "Unshelve…",
       category: "Git",
       icon: "unshelve",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => {
         const target = shelfTarget(arg);
         if (target) unshelve(target.entry, target.path);
@@ -638,7 +640,7 @@ export function registerHistoryActions(): () => void {
       id: "vcs.shelf.delete",
       title: "Delete Shelved Changes",
       category: "Git",
-      when: VCS,
+      when: GIT,
       hidden: true,
       run: ({ arg }) => {
         const target = shelfTarget(arg);
@@ -649,7 +651,7 @@ export function registerHistoryActions(): () => void {
       id: "vcs.shelf.rename",
       title: "Rename Shelved Changes…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       hidden: true,
       run: ({ arg }) => {
         const target = shelfTarget(arg);
@@ -661,7 +663,7 @@ export function registerHistoryActions(): () => void {
       id: "vcs.shelf.refresh",
       title: "Refresh Shelf",
       category: "Git",
-      when: VCS,
+      when: GIT,
       run: async () => {
         await loadShelves();
       },
@@ -670,35 +672,35 @@ export function registerHistoryActions(): () => void {
       id: "vcs.shelf.showDiff",
       title: "Show Shelved Diff",
       category: "Git",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => showShelfDiff(arg),
     },
     {
       id: "vcs.shelf.showDiffNewTab",
       title: "Show Diff in a New Tab",
       category: "Git",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => showShelfDiff(arg, false, true),
     },
     {
       id: "vcs.shelf.compareLocal",
       title: "Compare Shelved Changes with Local",
       category: "Git",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => showShelfDiff(arg, true),
     },
     {
       id: "vcs.shelf.createPatch",
       title: "Create Patch from Shelved Changes…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => createShelfPatch(arg),
     },
     {
       id: "vcs.shelf.copyPatch",
       title: "Copy as Patch to Clipboard",
       category: "Git",
-      when: VCS,
+      when: GIT,
       run: async ({ arg }) => {
         const t = shelfTarget(arg);
         if (t) await copyShelfPatch(t.entry, t.path);
@@ -708,7 +710,7 @@ export function registerHistoryActions(): () => void {
       id: "vcs.shelf.importPatches",
       title: "Import Patches…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => importShelfPatches(Array.isArray(arg) ? arg : undefined),
     },
 
@@ -718,7 +720,7 @@ export function registerHistoryActions(): () => void {
       title: "Create Patch…",
       category: "Git",
       icon: "file-patch",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => showCreatePatchForChanges(changePaths(arg)),
     },
     {
@@ -726,14 +728,14 @@ export function registerHistoryActions(): () => void {
       title: "Apply Patch…",
       category: "Git",
       icon: "file-patch",
-      when: VCS,
+      when: GIT,
       run: ({ arg }) => void showApplyPatch("file", typeof arg === "string" ? arg : undefined),
     },
     {
       id: "vcs.applyPatchFromClipboard",
       title: "Apply Patch from Clipboard…",
       category: "Git",
-      when: VCS,
+      when: GIT,
       run: () => void showApplyPatch("clipboard"),
     },
   ];

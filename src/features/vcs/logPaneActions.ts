@@ -22,7 +22,8 @@ import { goToRef, selectedCommits, updateLogOptions, useGitLog } from "./logStor
 import { commitKey, commitRepo } from "./multiRoot";
 import { currentRepoRoot, focusRepo } from "./store";
 
-const VCS = "vcsAvailable";
+/** Git only: hidden while the selected repository is a Perforce workspace. */
+const GIT = "vcsAvailable && !vcsPerforce";
 const LOG = "vcsAvailable || projectOpen || vcsLogFocus";
 
 function showFocusedHistoryDiff() {
@@ -129,7 +130,7 @@ export function registerLogPaneActions(): () => void {
       title: "New Branch…",
       category: "Git Log",
       icon: "plus",
-      when: VCS,
+      when: GIT,
       hidden: true,
       run: async ({ arg }) => {
         const t = branchArg(arg);
@@ -142,7 +143,7 @@ export function registerLogPaneActions(): () => void {
       title: "Update Selected",
       category: "Git Log",
       icon: "git-pull",
-      when: VCS,
+      when: GIT,
       hidden: true,
       run: withBranch((b) => updateBranch(b.name)),
     },
@@ -151,7 +152,7 @@ export function registerLogPaneActions(): () => void {
       title: "Delete Branch",
       category: "Git Log",
       icon: "trash",
-      when: VCS,
+      when: GIT,
       hidden: true,
       run: ({ arg }) => deleteBranches(branchTargets(arg)),
     },
@@ -160,7 +161,7 @@ export function registerLogPaneActions(): () => void {
       title: "Mark/Unmark As Favorite",
       category: "Git Log",
       icon: "star",
-      when: VCS,
+      when: GIT,
       hidden: true,
       run: withBranch(toggleFavoriteBranch),
     },
@@ -232,7 +233,7 @@ export function registerLogPaneActions(): () => void {
       id: "vcs.log.changes.getFromRevision",
       title: "Get from Revision",
       category: "Git Log",
-      when: VCS,
+      when: GIT,
       hidden: true,
       run: ({ arg }) => void getFromRevision(changesArg(arg)),
     },
@@ -241,7 +242,7 @@ export function registerLogPaneActions(): () => void {
       title: "Revert Selected Changes",
       category: "Git Log",
       icon: "revert",
-      when: VCS,
+      when: GIT,
       hidden: true,
       run: ({ arg }) => void revertSelectedChanges(changesArg(arg), useLogChanges.getState().commits),
     },
